@@ -7,7 +7,7 @@
   @page { size: A4; margin: 22mm 18mm; }
   * { box-sizing: border-box; }
   body {
-    font-family: {{ '"DejaVu Serif", Georgia, serif' if config.font_family == 'serif' else '"DejaVu Sans", Arial, sans-serif' }};
+    font-family: {{ 'DejaVu Serif, Georgia, serif' if config.font_family == 'serif' else 'DejaVu Sans, Arial, sans-serif' }};
     font-size: {{ '9.5pt' if config.font_size == 'small' else '12pt' if config.font_size == 'large' else '10.5pt' }};
     color: #1e293b;
     margin: 0;

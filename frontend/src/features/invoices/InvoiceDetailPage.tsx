@@ -91,7 +91,6 @@ export default function InvoiceDetailPage() {
               target="_blank"
               rel="noreferrer"
               className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
-              title="Requires the GTK3 runtime to be installed — see PROGRESS.md if this fails"
             >
               Print / PDF
             </a>

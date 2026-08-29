@@ -304,14 +304,17 @@ class PdfEngineUnavailable(RuntimeError):
 
 
 def render_pdf(html: str) -> bytes:
-    try:
-        from weasyprint import HTML  # imported lazily so preview works without it
-    except (ImportError, OSError) as exc:  # OSError: native GTK/Pango libs missing
-        raise PdfEngineUnavailable(
-            "PDF generation is unavailable: WeasyPrint could not load its native "
-            "rendering libraries (GTK3/Pango). On Windows, install the GTK3 "
-            "runtime (see WeasyPrint's install docs: "
-            "https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows) "
-            "then restart the backend. The HTML preview endpoint works without it."
-        ) from exc
-    return HTML(string=html).write_pdf()
+    """xhtml2pdf is pure Python (no native GTK/Pango runtime, unlike
+    WeasyPrint) so it bundles cleanly into a PyInstaller exe — see
+    packaging/README.md. Its HTML/CSS support is weaker than WeasyPrint's
+    (no flexbox/grid, limited box model) — see QUESTIONS.md for what that
+    means for the shared template's fidelity."""
+    import io
+
+    from xhtml2pdf import pisa
+
+    buffer = io.BytesIO()
+    result = pisa.CreatePDF(src=html, dest=buffer)
+    if result.err:
+        raise PdfEngineUnavailable(f"xhtml2pdf failed to render the PDF (err={result.err}).")
+    return buffer.getvalue()

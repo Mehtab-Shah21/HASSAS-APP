@@ -3,12 +3,10 @@
 # Build (from backend/):
 #   ..\.venv\Scripts\pyinstaller.exe packaging\pro_invoicing.spec --distpath dist --workpath build
 #
-# NOTE (untested in this sandbox — see PROGRESS.md / QUESTIONS.md): WeasyPrint
-# bundles native GTK/Pango DLLs dynamically at import time, which is a known
-# hard case for PyInstaller. If the packaged .exe's PDF endpoint fails where
-# the unpackaged dev server's didn't, the GTK3 DLLs likely need to be added
-# to `binaries=` below explicitly (find them under the GTK3 runtime install
-# path, typically the same one from QUESTIONS.md #4).
+# NOTE: the PDF engine is xhtml2pdf (pure Python, no native GTK/Pango DLLs
+# to worry about — that's why it replaced WeasyPrint, see QUESTIONS.md #4),
+# so this should bundle more predictably than a WeasyPrint-based build would
+# have. Still untested end-to-end (no full PyInstaller build has been run).
 
 import sys
 from pathlib import Path

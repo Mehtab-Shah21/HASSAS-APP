@@ -73,13 +73,11 @@ deployment would need `pg_dump`/`pg_restore` wired in separately.
 
 ## What's NOT built / explicitly out of scope right now
 
-- **Actually running a PyInstaller build.** WeasyPrint dynamically loads
-  native GTK/Pango DLLs at import time (see `QUESTIONS.md` #4) — this is a
-  known-hard case for PyInstaller, which normally only bundles what it can
-  statically detect. If/when someone runs the build, the PDF endpoint should
-  be tested first; if it 503s in the packaged .exe where the dev server
-  works, the GTK3 DLLs likely need to be added to the spec's `binaries=`
-  list explicitly.
+- **Actually running a PyInstaller build.** No longer expected to be a hard
+  case — the PDF engine was switched from WeasyPrint to xhtml2pdf (pure
+  Python, no native GTK/Pango runtime, see `QUESTIONS.md` #4), specifically
+  because it bundles cleanly into a PyInstaller exe. Still untested for real
+  since no full build has been run yet — worth confirming once someone does.
 - **Installing the Windows service.** `sc create`, `sc failure` (auto-restart
   on crash), and the firewall rule are all system-level, hard-to-reverse
   actions requiring Administrator — deliberately left as manual steps below
