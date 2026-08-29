@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>{{ doc_type }} {{ number }}</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: {{ '"DejaVu Serif", Georgia, serif' if config.font_family == 'serif' else '"DejaVu Sans", Arial, sans-serif' }};
+    font-size: {{ '9.5pt' if config.font_size == 'small' else '12pt' if config.font_size == 'large' else '10.5pt' }};
+    color: #1e293b;
+    margin: 0;
+    position: relative;
+  }
+  .accent { color: {{ accent_color }}; }
+  .header {
+    display: flex;
+    justify-content: {{ 'flex-end' if config.logo_position == 'right' else 'center' if config.logo_position == 'center' else 'space-between' }};
+    flex-direction: {{ 'row-reverse' if config.logo_position == 'right' else 'row' }};
+    align-items: flex-start;
+    border-bottom: 3px solid {{ accent_color }};
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+  }
+  .logo { max-height: 60px; max-width: 200px; object-fit: contain; }
+  .biz-name { font-size: 1.4em; font-weight: bold; margin: 0 0 2px; }
+  .biz-line { font-size: 0.85em; color: #475569; margin: 0; }
+  .doc-title {
+    font-size: 1.9em;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: {{ accent_color }};
+    text-align: right;
+    margin: 0;
+  }
+  .doc-meta { font-size: 0.9em; text-align: right; color: #475569; }
+  .doc-meta td { padding: 1px 0 1px 12px; text-align: right; }
+  .parties { display: flex; justify-content: space-between; margin-bottom: 18px; }
+  .party-block { width: 48%; }
+  .party-label { font-size: 0.76em; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 3px; }
+  .party-name { font-weight: bold; font-size: 1.05em; margin-bottom: 2px; }
+  .party-line { font-size: 0.9em; color: #334155; margin: 0; }
+  table.items { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  table.items th {
+    background: {{ accent_color }};
+    color: white;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    padding: 6px 8px;
+    text-align: left;
+  }
+  table.items th.num, table.items td.num { text-align: right; }
+  table.items td {
+    padding: 6px 8px;
+    font-size: 0.9em;
+    {% if config.table_style == 'bordered' %}border: 1px solid #cbd5e1;{% else %}border-bottom: 1px solid #e2e8f0;{% endif %}
+  }
+  {% if config.table_style == 'striped' %}
+  table.items tbody tr:nth-child(even) { background: #f8fafc; }
+  {% endif %}
+  .totals { width: 260px; margin-left: auto; font-size: 0.95em; }
+  .totals tr td { padding: 3px 0; }
+  .totals td.label { color: #64748b; }
+  .totals td.value { text-align: right; }
+  .totals tr.grand td { border-top: 2px solid #1e293b; font-weight: bold; font-size: 1.15em; padding-top: 6px; }
+  .amount-words { margin-top: 10px; font-size: 0.85em; font-style: italic; color: #475569; text-align: right; }
+  .notes-terms { display: flex; justify-content: space-between; margin-top: 22px; font-size: 0.85em; }
+  .notes-terms .block { width: 48%; }
+  .notes-terms .label { font-size: 0.76em; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 3px; }
+  .bank { margin-top: 16px; font-size: 0.85em; border: 1px solid #e2e8f0; padding: 10px; border-radius: 4px; }
+  .bank .label { font-size: 0.76em; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 4px; }
+  .signature { margin-top: 40px; font-size: 0.85em; }
+  .signature .line { width: 220px; border-top: 1px solid #334155; padding-top: 4px; color: #64748b; }
+  .footer { margin-top: 24px; text-align: center; font-size: 0.8em; color: #94a3b8; }
+  .status-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px;
+    font-size: 0.8em; text-transform: uppercase; font-weight: bold;
+    background: #f1f5f9; color: #475569;
+  }
+  .watermark {
+    position: fixed; top: 40%; left: 10%; width: 80%;
+    font-size: 80pt; font-weight: bold; color: {{ accent_color }};
+    opacity: 0.08; transform: rotate(-30deg); text-align: center;
+    text-transform: uppercase; z-index: -1;
+  }
+</style>
+</head>
+<body>
+
+  {% if config.show_watermark %}<div class="watermark">{{ status }}</div>{% endif %}
+
+  <div class="header">
+    <div>
+      {% if logo_uri %}<img class="logo" src="{{ logo_uri }}" />{% endif %}
+      <p class="biz-name">{{ business.legal_name or business.name }}</p>
+      {% if business.address_line1 %}<p class="biz-line">{{ business.address_line1 }}{% if business.address_line2 %}, {{ business.address_line2 }}{% endif %}</p>{% endif %}
+      {% if business.city or business.country %}<p class="biz-line">{{ [business.city, business.state, business.country] | select | join(', ') }}</p>{% endif %}
+      {% if business.phone %}<p class="biz-line">Tel: {{ business.phone_code or '' }} {{ business.phone }}{% if business.email %} &middot; {{ business.email }}{% endif %}</p>{% endif %}
+      {% if business.tax_id %}<p class="biz-line">Tax ID: {{ business.tax_id }}{% if business.cr_no %} &middot; CR No: {{ business.cr_no }}{% endif %}</p>{% endif %}
+    </div>
+    <div>
+      <p class="doc-title">{{ doc_type }}</p>
+      <table class="doc-meta">
+        <tr><td>No.</td><td><strong>{{ number }}</strong></td></tr>
+        <tr><td>Date</td><td>{{ doc_date }}</td></tr>
+        {% if due_date %}<tr><td>{{ due_label }}</td><td>{{ due_date }}</td></tr>{% endif %}
+        <tr><td>Status</td><td><span class="status-badge">{{ status }}</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="parties">
+    <div class="party-block">
+      <p class="party-label">Bill To</p>
+      <p class="party-name">{{ customer.name }}</p>
+      {% if employee %}<p class="party-line">Attn: {{ employee.name }}</p>{% endif %}
+      {% if 'address' in config.bill_to_fields and customer.address_line1 %}<p class="party-line">{{ customer.address_line1 }}{% if customer.address_line2 %}, {{ customer.address_line2 }}{% endif %}</p>{% endif %}
+      {% if 'address' in config.bill_to_fields and (customer.city or customer.country) %}<p class="party-line">{{ [customer.city, customer.state, customer.country] | select | join(', ') }}</p>{% endif %}
+      {% if 'phone' in config.bill_to_fields and customer.phone %}<p class="party-line">Tel: {{ customer.phone_code or '' }} {{ customer.phone }}</p>{% endif %}
+      {% if 'email' in config.bill_to_fields and customer.email %}<p class="party-line">{{ customer.email }}</p>{% endif %}
+      {% if 'tax_id' in config.bill_to_fields and customer.id_value %}<p class="party-line">{{ 'Tax/VAT No' if customer.id_kind == 'vat_tax' else 'National ID' }}: {{ customer.id_value }}</p>{% endif %}
+    </div>
+    {% if config.show_sender_block %}
+    <div class="party-block" style="text-align: right;">
+      <p class="party-label">From</p>
+      <p class="party-name">{{ business.name }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="num">Qty</th>
+        <th class="num">Unit price</th>
+        <th class="num">Discount</th>
+        {% if show_govt_fee %}<th class="num">Govt. fee</th>{% endif %}
+        <th class="num">VAT %</th>
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.description }}</td>
+        <td class="num">{{ item.qty }}</td>
+        <td class="num">{{ '%.2f' | format(item.unit_price) }}</td>
+        <td class="num">{{ '%.2f' | format(item.discount) }}</td>
+        {% if show_govt_fee %}<td class="num">{{ '%.2f' | format(item.govt_fee * item.qty) }}</td>{% endif %}
+        <td class="num">{{ '%.2f' | format(item.vat_rate) }}%</td>
+        <td class="num">{{ '%.2f' | format(item.line_total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td class="label">Subtotal</td><td class="value">{{ currency }} {{ '%.2f' | format(subtotal) }}</td></tr>
+    {% if discount_total %}<tr><td class="label">Discount{% if coupon_code %} ({{ coupon_code }}){% endif %}</td><td class="value">-{{ currency }} {{ '%.2f' | format(discount_total) }}</td></tr>{% endif %}
+    {% if config.show_tax_breakdown %}<tr><td class="label">VAT</td><td class="value">{{ currency }} {{ '%.2f' | format(vat_total) }}</td></tr>{% endif %}
+    {% if show_govt_fee and govt_fee_total %}<tr><td class="label">Government fees</td><td class="value">{{ currency }} {{ '%.2f' | format(govt_fee_total) }}</td></tr>{% endif %}
+    <tr class="grand"><td class="label">Total</td><td class="value">{{ currency }} {{ '%.2f' | format(grand_total) }}</td></tr>
+    {% if amount_paid %}
+    <tr><td class="label">Paid</td><td class="value">{{ currency }} {{ '%.2f' | format(amount_paid) }}</td></tr>
+    <tr><td class="label">Balance due</td><td class="value">{{ currency }} {{ '%.2f' | format(grand_total - amount_paid) }}</td></tr>
+    {% endif %}
+  </table>
+
+  {% if amount_in_words %}<p class="amount-words">{{ amount_in_words }}</p>{% endif %}
+
+  {% if (config.show_notes and notes) or (config.show_terms and terms) %}
+  <div class="notes-terms">
+    {% if config.show_notes and notes %}<div class="block"><p class="label">Notes</p><p>{{ notes }}</p></div>{% endif %}
+    {% if config.show_terms and terms %}<div class="block"><p class="label">Terms & Conditions</p><p>{{ terms }}</p></div>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if show_bank_details and business.bank_iban_or_no %}
+  <div class="bank">
+    <p class="label">Bank Details</p>
+    <p>{{ business.bank_name }} &middot; {{ business.bank_account_name }}<br/>
+    IBAN/Account No: {{ business.bank_iban_or_no }}{% if business.bank_swift %} &middot; SWIFT: {{ business.bank_swift }}{% endif %}</p>
+  </div>
+  {% endif %}
+
+  {% if config.show_signature %}
+  <div class="signature">
+    <div class="line">Authorized Signature</div>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    {% if business.website %}{{ business.website }} &middot; {% endif %}Generated by {{ business.name }}
+  </div>
+
+</body>
+</html>

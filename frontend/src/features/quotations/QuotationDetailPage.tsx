@@ -1,0 +1,186 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getServerUrl } from "../../api/client";
+import { getCustomer } from "../../api/customers";
+import { convertQuotation, getQuotation, updateQuotationStatus } from "../../api/quotations";
+import type { Customer, Quotation, QuotationStatus, TransactionType } from "../../api/types";
+
+const STATUS_OPTIONS: QuotationStatus[] = ["draft", "sent", "accepted", "rejected"];
+
+export default function QuotationDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const quotationId = Number(id);
+  const [quotation, setQuotation] = useState<Quotation | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [converting, setConverting] = useState(false);
+  const [convertType, setConvertType] = useState<TransactionType>("credit");
+
+  async function load() {
+    setLoading(true);
+    try {
+      const q = await getQuotation(quotationId);
+      setQuotation(q);
+      setCustomer(await getCustomer(q.customer_id));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotationId]);
+
+  async function handleStatusChange(status: QuotationStatus) {
+    if (!quotation) return;
+    setQuotation(await updateQuotationStatus(quotation.id, status));
+  }
+
+  async function handleConvert() {
+    if (!quotation) return;
+    setConverting(true);
+    try {
+      const result = await convertQuotation(quotation.id, convertType);
+      navigate(`/invoices/${result.invoice_id}`);
+    } finally {
+      setConverting(false);
+    }
+  }
+
+  if (loading || !quotation) return <p className="text-sm text-slate-500">Loading...</p>;
+
+  return (
+    <div>
+      <button onClick={() => navigate("/quotations")} className="mb-3 text-sm text-slate-500 hover:underline">
+        ← Back to quotations
+      </button>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-6">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">{quotation.number}</h1>
+            <p className="text-sm text-slate-500">
+              {customer?.name} · {quotation.quotation_date} · valid until {quotation.valid_until}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {quotation.status === "converted" ? (
+              <span className="rounded-full bg-indigo-100 px-3 py-1.5 text-sm font-medium text-indigo-700">
+                Converted → Invoice #{quotation.converted_invoice_id}
+              </span>
+            ) : (
+              <>
+                <select
+                  value={quotation.status}
+                  onChange={(e) => handleStatusChange(e.target.value as QuotationStatus)}
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm capitalize focus:border-indigo-500 focus:outline-none"
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={convertType}
+                  onChange={(e) => setConvertType(e.target.value as TransactionType)}
+                  className="rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+                >
+                  <option value="credit">Credit</option>
+                  <option value="cash">Cash</option>
+                </select>
+                <button
+                  onClick={handleConvert}
+                  disabled={converting}
+                  className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {converting ? "Converting..." : "Convert to invoice"}
+                </button>
+              </>
+            )}
+            <a
+              href={`${getServerUrl()}/api/quotations/${quotation.id}/preview`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+            >
+              Preview
+            </a>
+            <a
+              href={`${getServerUrl()}/api/quotations/${quotation.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+            >
+              Print / PDF
+            </a>
+          </div>
+        </div>
+
+        <table className="mb-4 w-full text-sm">
+          <thead className="text-left text-xs font-semibold uppercase text-slate-500">
+            <tr>
+              <th className="py-1.5">Description</th>
+              <th className="py-1.5">Qty</th>
+              <th className="py-1.5">Price</th>
+              <th className="py-1.5">Discount</th>
+              <th className="py-1.5">VAT %</th>
+              <th className="py-1.5 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {quotation.items.map((item) => (
+              <tr key={item.id}>
+                <td className="py-2 text-slate-800">{item.description}</td>
+                <td className="py-2 text-slate-600">{item.qty}</td>
+                <td className="py-2 text-slate-600">{item.unit_price.toFixed(2)}</td>
+                <td className="py-2 text-slate-600">{item.discount.toFixed(2)}</td>
+                <td className="py-2 text-slate-600">{item.vat_rate.toFixed(2)}</td>
+                <td className="py-2 text-right text-slate-700">{item.line_total.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="ml-auto max-w-xs space-y-1 text-sm">
+          <Row label="Subtotal" value={quotation.subtotal} />
+          <Row label="Discount" value={-quotation.discount_total} />
+          <Row label="VAT" value={quotation.vat_total} />
+          <Row label="Govt. fees" value={quotation.govt_fee_total} />
+          <div className="flex justify-between border-t border-slate-200 pt-1 text-base font-semibold text-slate-900">
+            <span>Grand total</span>
+            <span>{quotation.grand_total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {(quotation.notes || quotation.terms) && (
+          <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
+            {quotation.notes && (
+              <div>
+                <p className="text-xs font-medium uppercase text-slate-400">Notes</p>
+                <p className="whitespace-pre-wrap text-slate-600">{quotation.notes}</p>
+              </div>
+            )}
+            {quotation.terms && (
+              <div>
+                <p className="text-xs font-medium uppercase text-slate-400">Terms</p>
+                <p className="whitespace-pre-wrap text-slate-600">{quotation.terms}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex justify-between text-slate-600">
+      <span>{label}</span>
+      <span>{value.toFixed(2)}</span>
+    </div>
+  );
+}

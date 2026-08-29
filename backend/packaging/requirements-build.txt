@@ -1,0 +1,4 @@
+# Build-time only — do NOT add these to the main requirements.txt, they're
+# not runtime dependencies of the app itself.
+pyinstaller==6.22.2
+pywin32==312

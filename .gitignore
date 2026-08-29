@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.db
+*.sqlite3
+
+# Uploaded files (logos etc.) - not source, but keep the folder via .gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Env
+# frontend/.env is intentionally tracked — it only holds the non-secret
+# admin-install default VITE_API_URL=http://localhost:8000, not credentials.
+.env.local
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
